@@ -41,6 +41,7 @@ struct Shake{
     time:f32,
 }
 
+#[derive(Resource)]
 struct Score {
     value:i32,
     ships:i32
@@ -55,6 +56,7 @@ impl Default for Score{
     }
 }
 
+#[derive(Resource)]
 struct CountLaser{
     value:i32
 }
@@ -63,17 +65,19 @@ fn main() {
     App::new()
         //add config resources
         .insert_resource(Msaa {samples: 4})
-        .insert_resource(WindowDescriptor{
-            title: "bevyastro".to_string(),
-            width: 800.0,
-            height: 600.0,
-            ..Default::default()
-        })
         .insert_resource(ClearColor(Color::MIDNIGHT_BLUE))
         .insert_resource(Score::default())
         .insert_resource(CountLaser{value:0})
         //bevy itself
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            window: WindowDescriptor {
+                title: "bevyastro".to_string(),
+                width: 800.0,
+                height: 600.0,
+                ..default()
+            },
+            ..default()
+        }))
         // system once
         .add_startup_system(setup)
         // system frame
@@ -98,7 +102,7 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ){
     // light
-    commands.spawn_bundle(PointLightBundle{
+    commands.spawn(PointLightBundle{
         point_light: PointLight{
             intensity: 1500.0,
             shadows_enabled: true,
@@ -113,7 +117,7 @@ fn setup(
         brightness: 0.02,
     });
     //camera
-   commands.spawn_bundle(Camera3dBundle{ //0.8
+   commands.spawn(Camera3dBundle{ //0.8
         transform: Transform::from_xyz(0.0,20.0,0.5).looking_at(Vec3::new(0.,0.,0.), Vec3::Y),
         ..Default::default()
     })
@@ -123,7 +127,7 @@ fn setup(
    });
 
     // scoreboard
-    commands.spawn_bundle(TextBundle {
+    commands.spawn(TextBundle {
         text: Text::from_section(
             "Score:",
             TextStyle {
@@ -145,7 +149,7 @@ fn setup(
     })
     .insert(Scoretext);
 
-    commands.spawn_bundle(TextBundle {
+    commands.spawn(TextBundle {
         text: Text::from_section(
             "Ship:",
             TextStyle {
@@ -170,11 +174,11 @@ fn setup(
     // ship
     let ship_position = Vec3::new(0.0, 0.0, 0.0);
 
-    commands.spawn_bundle(TransformBundle{
+    commands.spawn(TransformBundle{
         local: Transform::from_translation(ship_position),
-        global: GlobalTransform::identity()
+        global: GlobalTransform::IDENTITY
         })
-        .insert_bundle(SceneBundle {
+        .insert(SceneBundle {
                 scene: asset_server.load("models/ship.gltf#Scene0"),
                 ..Default::default()
             })
@@ -201,7 +205,7 @@ fn setup(
             let child_position = Vec3::new(rng.gen_range(0.0..ASTROID_SIZE),
                 rng.gen_range(0.0..ASTROID_SIZE),
                 rng.gen_range(0.0..ASTROID_SIZE));
-            let entity = commands.spawn_bundle(PbrBundle {
+            let entity = commands.spawn(PbrBundle {
                mesh: meshes.add(Mesh::from(shape::Icosphere { radius: ASTROID_SIZE, subdivisions: 32, })),
                material: materials.add(asteroid_color().into()),
                transform: Transform::from_translation(child_position),
@@ -212,7 +216,7 @@ fn setup(
         //direction
         let direction = rng.gen_range(0.0..2.0);
 
-        commands.spawn_bundle(PbrBundle {
+        commands.spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Icosphere { radius: ASTROID_SIZE, subdivisions: 32, })),
             material: materials.add(asteroid_color().into()),
             transform: Transform{
@@ -270,7 +274,7 @@ fn input_ship(
         if keyboard_input.just_pressed(KeyCode::Space) {
             if count_laser.value <= MAX_LASER {
                 count_laser.value += 1;
-                commands.spawn_bundle(PbrBundle {
+                commands.spawn(PbrBundle {
                     mesh: meshes.add(Mesh::from(shape::Box::new(0.1, 0.1, 1.6))),
                     material: materials.add(StandardMaterial {
                         base_color: Color::LIME_GREEN,
@@ -338,7 +342,7 @@ fn collision_laser(
                 if asteroid.divisible {
                     let mut rng = rand::thread_rng();
                     for _ in 0..5{
-                        commands.spawn_bundle(PbrBundle {
+                        commands.spawn(PbrBundle {
                             mesh: meshes.add(Mesh::from(shape::Icosphere { radius: ASTROID_SIZE, subdivisions: 32, })),
                             material: materials.add(asteroid_color().into()),
                             transform: Transform {
